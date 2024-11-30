@@ -6,7 +6,9 @@ import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+
 import json
+import pandas as pd
 
 app = FastAPI()
 
@@ -103,5 +105,39 @@ async def login(user: UserBase, db: db_dependency):
 
     if tupla is None:
         raise HTTPException(status_code=404, detail='User not Found')
-    else:
-        return {"user_id": tupla[0], "user_name": tupla[1]}
+    rs.close
+    return {"user_id": tupla[0], "user_name": tupla[1]}
+
+
+@app.get("/products", status_code=status.HTTP_200_OK)
+async def getProducts(db: db_dependency):
+    tupla = ()
+    sql = f"select id,name,description,image from products"
+    print(sql)
+    rs = db.execute(text(sql))
+    print(type(rs))
+    tupla = rs.all()
+
+    # Normal --------------------------------------------------
+    print("-------------------------")
+    products = []
+    for p in tupla:
+        products.append({"id": p[0], "name": p[1],
+                         "description": p[2], "image": p[3]})
+        print(p)
+        print("-------------------------")
+    print("**************************")
+    print(products)
+    # ----------------------------------------------------------
+
+    # con Pandas -----------------------------------------------
+    # se debe instalar pandas: pip install pandas
+    # df = pd.DataFrame(tupla, columns=['id', 'name', 'description', 'image'])
+    # json_data = df.to_json(orient='records')
+    # products = json.loads(json_data)
+    # ----------------------------------------------------------
+
+    if tupla is None:
+        raise HTTPException(status_code=404, detail='Products not Found')
+    rs.close()
+    return products
