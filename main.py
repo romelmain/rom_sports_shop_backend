@@ -120,7 +120,7 @@ async def login(user: UserBase, db: db_dependency):
 @app.get("/products", status_code=status.HTTP_200_OK)
 async def getProducts(db: db_dependency):
     tupla = ()
-    sql = (f'select a.id,a.name,a.description,a.image,b.price '
+    sql = (f'select a.id,a.name,a.description,a.image,b.price, b.id as id_product_price '
            'from products a '
            'inner join product_price b on (a.id = b.id_product) '
            'where b.status = 1')
@@ -134,7 +134,7 @@ async def getProducts(db: db_dependency):
     products = []
     for p in tupla:
         products.append({"id": p[0], "name": p[1],
-                         "description": p[2], "image": p[3], "price": p[4]})
+                         "description": p[2], "image": p[3], "price": p[4], "id_product_price": p[5]})
         print(p)
         print("-------------------------")
     print("**************************")
