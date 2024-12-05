@@ -154,7 +154,7 @@ async def getProducts(db: db_dependency):
     return products
 
 
-@app.post("/products/price", status_code=status.HTTP_201_CREATED)
+@app.post("/cart", status_code=status.HTTP_201_CREATED)
 async def createCart(cart: CartBase, db: db_dependency):
     print("Probando")
 
