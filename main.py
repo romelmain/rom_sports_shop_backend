@@ -1,3 +1,4 @@
+import datetime
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -39,6 +40,13 @@ class PostBase(BaseModel):
 class UserBase(BaseModel):
     username: str
     password: str
+
+
+class CartBase(BaseModel):
+    date: str
+    status_id: int
+    user_id: int
+    product_price_id: int
 
 
 def get_db():
@@ -144,3 +152,30 @@ async def getProducts(db: db_dependency):
         raise HTTPException(status_code=404, detail='Products not Found')
     rs.close()
     return products
+
+
+@app.post("/products/price", status_code=status.HTTP_201_CREATED)
+async def createCart(cart: CartBase, db: db_dependency):
+    print("Probando")
+
+    try:
+        newCart = models.Cart()
+        newCart.id_status = cart.status_id
+        newCart.id_user = cart.user_id
+        newCart.date = cart.date
+
+        db.add(newCart)
+        db.flush()
+        print(newCart.id)
+
+        newProductCart = models.ProductCart()
+        newProductCart.id_cart = newCart.id
+        newProductCart.id_product_price = cart.product_price_id
+        db.add(newProductCart)
+
+        db.commit()
+    except:
+        db.rollback()
+
+    print(newCart.id)
+    return {"id_cart": newCart.id}
