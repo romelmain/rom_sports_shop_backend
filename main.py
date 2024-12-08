@@ -154,6 +154,36 @@ async def getProducts(db: db_dependency):
     return products
 
 
+@app.get("/products/{product_id}", status_code=status.HTTP_200_OK)
+async def getProductsById(product_id: int, db: db_dependency):
+    tupla = ()
+    sql = ("select a.id,a.name,a.description,a.image,b.price, b.id as id_product_price "
+           "from products a "
+           "inner join product_price b on (a.id = b.id_product) "
+           f"where b.status = 1 and a.id = {product_id}")
+    print(product_id)
+    print(sql)
+    rs = db.execute(text(sql))
+    print(type(rs))
+    tupla = rs.all()
+
+    product = {}
+    products = []
+    for p in tupla:
+        products.append({"id": p[0], "name": p[1],
+                         "description": p[2], "image": p[3], "price": p[4], "id_product_price": p[5]})
+        print(p)
+    print(products)
+
+    if len(products) > 0:
+        product = products[0]
+
+    if tupla is None or len(products) == 0:
+        raise HTTPException(status_code=404, detail='Products not Found')
+    rs.close()
+    return product
+
+
 @app.post("/cart", status_code=status.HTTP_201_CREATED)
 async def createCart(cart: CartBase, db: db_dependency):
     print("Probando")
