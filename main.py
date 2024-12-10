@@ -2,7 +2,7 @@ import datetime
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Annotated
+from typing import Annotated, List, Optional
 import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
@@ -42,11 +42,46 @@ class UserBase(BaseModel):
     password: str
 
 
+class ProductBase(BaseModel):
+    id: int
+    name: str
+    description: str
+    image: str
+
+
+class ProductDto():
+    id: int
+    name: str
+    description: str
+    image: str
+
+
+class ProductPriceDto():
+    product_id: int
+    price: float
+    product: ProductDto
+
+
+class ProductPriceBase(BaseModel):
+    product_id: int
+    price: float
+    product: ProductBase
+
+
 class CartBase(BaseModel):
     date: str
     status_id: int
     user_id: int
     product_price_id: int
+
+
+class CartDto():
+    """Cart Dto"""
+    id: int
+    date: str
+    status_id: int
+    user_id: int
+    list_product_price: List[ProductPriceDto] = []
 
 
 def get_db():
@@ -186,8 +221,6 @@ async def getProductsById(product_id: int, db: db_dependency):
 
 @app.post("/cart", status_code=status.HTTP_201_CREATED)
 async def createCart(cart: CartBase, db: db_dependency):
-    print("Probando")
-
     try:
         newCart = models.Cart()
         newCart.id_status = cart.status_id
@@ -209,3 +242,45 @@ async def createCart(cart: CartBase, db: db_dependency):
 
     print(newCart.id)
     return {"id_cart": newCart.id}
+
+
+@app.get("/cart/{cart_id}", status_code=status.HTTP_200_OK)
+async def getCartById(cart_id: int, db: db_dependency):
+    try:
+        tupla = ()
+        sql = ("select a.id, a.date, c.price, d.id as id_product, d.name, d.description, d.image "
+               "from cart a "
+               "inner join product_cart b on (a.id = b.id_cart) "
+               "inner join product_price c on (b.id_product_price = c.id) "
+               "inner join products d on (c.id_product = d.id) "
+               "inner join status_cart e on (a.id_status = e.id) "
+               f"where a.id_status = 1 and a.id = {cart_id}")
+
+        print(sql)
+        rs = db.execute(text(sql))
+        print(type(rs))
+        print(rs)
+
+        tupla = rs.all()
+
+        newCart = CartDto()
+        newCart.id = tupla[0][0]
+        newCart.date = tupla[0][1]
+
+        listProductPrice = []
+        for p in tupla:
+            newPproduct = ProductDto()
+            newPproduct.id = p[3]
+            newPproduct.image = p[6]
+            newPproduct.name = p[4]
+            newPproduct.description = p[5]
+            newProductPrice = ProductPriceDto()
+            newProductPrice.product = newPproduct
+            newProductPrice.price = p[2]
+            listProductPrice.append(newProductPrice)
+            newCart.list_product_price = listProductPrice
+    except:
+        if tupla is None or len(tupla) == 0:
+            raise HTTPException(status_code=404, detail='Cart not Found')
+    rs.close()
+    return newCart
