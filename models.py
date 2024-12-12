@@ -80,6 +80,7 @@ class ProductCart(Base):
     __tablename__ = "product_cart"
     # Columns------------------------------------------
     id = Column(Integer, primary_key=True, index=True)
+    quantity = Column(Integer)
     # ForeignKeys--------------------------------------
     id_cart = Column(Integer, ForeignKey('cart.id'))
     id_product_price = Column(Integer, ForeignKey('product_price.id'))

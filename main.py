@@ -7,6 +7,8 @@ import models
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy import update
+from sqlalchemy.exc import DataError, IntegrityError, OperationalError, SQLAlchemyError
 
 import json
 import pandas as pd
@@ -60,6 +62,7 @@ class ProductPriceDto():
     product_id: int
     price: float
     product: ProductDto
+    quantity: int
 
 
 class ProductPriceBase(BaseModel):
@@ -234,8 +237,41 @@ async def getProductsById(product_id: int, db: db_dependency):
     return product
 
 
+def validateProductCart(id_cart: int, id_product_price: int, db: db_dependency):
+    quantity = 0
+    tupla = ()
+    sql = (f"select id, quantity from product_cart where id_cart = {id_cart}"
+           f" and id_product_price = {id_product_price}")
+    print(sql)
+    try:
+        rs = db.execute(text(sql))
+        print(rs)
+        tupla = rs.first()
+
+    except TypeError:
+        print("No Product Cart")
+    return tupla
+
+
+def updateProductCart(id_cart: int, id_product_price: int, quantity: int, db: db_dependency):
+    tupla = ()
+    sql = (f"UPDATE product_cart SET quantity = {quantity}"
+           f" WHERE id = {id_product_price}"
+           f" and id_cart = {id_cart}")
+    print(sql)
+    try:
+        rs = db.execute(text(sql))
+        print(rs)
+        tupla = rs.first()
+        print(tupla)
+    except TypeError:
+        print("Problem in Update Product Cart")
+    return tupla
+
+
 @app.post("/cart", status_code=status.HTTP_201_CREATED)
 async def createCart(cart: CartBase, db: db_dependency):
+    quantity = 0
     try:
 
         id_cart = validateCart(cart.user_id, db)
@@ -247,17 +283,35 @@ async def createCart(cart: CartBase, db: db_dependency):
         if id_cart == 0:
             db.add(newCart)
             db.flush()
-            print(newCart.id)
+            newProductCart = models.ProductCart()
+            newProductCart.id_cart = newCart.id
+            newProductCart.id_product_price = cart.product_price_id
+            newProductCart.quantity = 1
+            db.add(newProductCart)
         else:
             newCart.id = id_cart
 
-        newProductCart = models.ProductCart()
-        newProductCart.id_cart = newCart.id
-        newProductCart.id_product_price = cart.product_price_id
-        db.add(newProductCart)
+        val = validateProductCart(newCart.id, cart.product_price_id, db)
+        print(val)
+        if val is None:
+            print("aaaa")
+        else:
+            id_product_cart = val[0]
+            quantity = val[1]
+            quantity = quantity + 1
+            productCart = models.ProductCart()
+            productCart.id = id_product_cart
+            update(productCart).values(
+                {"quantity": quantity}).where(productCart.id == id_product_cart)
+
+            print("bbbb")
+            print(id_product_cart)
+            print(quantity)
 
         db.commit()
-    except:
+    except SQLAlchemyError as err:
+        print("cccc")
+        print(err)
         db.rollback()
 
     print(newCart.id)
