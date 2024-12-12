@@ -237,14 +237,19 @@ async def getProductsById(product_id: int, db: db_dependency):
 @app.post("/cart", status_code=status.HTTP_201_CREATED)
 async def createCart(cart: CartBase, db: db_dependency):
     try:
+
+        id_cart = validateCart(cart.user_id, db)
         newCart = models.Cart()
         newCart.id_status = cart.status_id
         newCart.id_user = cart.user_id
         newCart.date = cart.date
 
-        db.add(newCart)
-        db.flush()
-        print(newCart.id)
+        if id_cart == 0:
+            db.add(newCart)
+            db.flush()
+            print(newCart.id)
+        else:
+            newCart.id = id_cart
 
         newProductCart = models.ProductCart()
         newProductCart.id_cart = newCart.id
