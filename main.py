@@ -134,6 +134,21 @@ async def delete_post(post_id: int, db: db_dependency):
     db.commit()
 
 
+def validateCart(user_id: int, db: db_dependency):
+    id_cart = 0
+    tupla = ()
+    sql = f"SELECT id FROM cart where id_status = 1 and id_user = {user_id}"
+    print(sql)
+    try:
+        rs = db.execute(text(sql))
+        print(rs)
+        tupla = rs.first()
+        id_cart = tupla[0]
+    except TypeError:
+        print("No Cart")
+    return id_cart
+
+
 @app.post("/users/login", status_code=status.HTTP_200_OK)
 async def login(user: UserBase, db: db_dependency):
     tupla = ()
@@ -145,11 +160,11 @@ async def login(user: UserBase, db: db_dependency):
     print(rs)
     tupla = rs.first()
     print(tupla)
-
+    id_cart = validateCart(tupla[0], db)
     if tupla is None:
         raise HTTPException(status_code=404, detail='User not Found')
     rs.close
-    return {"user_id": tupla[0], "user_name": tupla[1]}
+    return {"user_id": tupla[0], "user_name": tupla[1], "id_cart": id_cart}
 
 
 @app.get("/products", status_code=status.HTTP_200_OK)
