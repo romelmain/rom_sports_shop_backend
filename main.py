@@ -283,30 +283,22 @@ async def createCart(cart: CartBase, db: db_dependency):
         if id_cart == 0:
             db.add(newCart)
             db.flush()
+        else:
+            newCart.id = id_cart
+
+        productCart = db.query(models.ProductCart).filter(
+            models.ProductCart.id_product_price == cart.product_price_id, models.ProductCart.id_cart == newCart.id).first()
+
+        if not productCart:
             newProductCart = models.ProductCart()
             newProductCart.id_cart = newCart.id
             newProductCart.id_product_price = cart.product_price_id
             newProductCart.quantity = 1
             db.add(newProductCart)
         else:
-            newCart.id = id_cart
-
-        val = validateProductCart(newCart.id, cart.product_price_id, db)
-        print(val)
-        if val is None:
-            print("aaaa")
-        else:
-            id_product_cart = val[0]
-            quantity = val[1]
-            quantity = quantity + 1
-            productCart = models.ProductCart()
-            productCart.id = id_product_cart
-            update(productCart).values(
-                {"quantity": quantity}).where(productCart.id == id_product_cart)
-
-            print("bbbb")
-            print(id_product_cart)
-            print(quantity)
+            quantity = productCart.quantity
+            productCart.quantity = quantity + 1
+            print(productCart)
 
         db.commit()
     except SQLAlchemyError as err:
