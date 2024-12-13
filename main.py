@@ -314,7 +314,7 @@ async def createCart(cart: CartBase, db: db_dependency):
 async def getCartById(cart_id: int, db: db_dependency):
     try:
         tupla = ()
-        sql = ("select a.id, a.date, c.price, d.id as id_product, d.name, d.description, d.image "
+        sql = ("select a.id, a.date, c.price, d.id as id_product, d.name, d.description, d.image, b.quantity "
                "from cart a "
                "inner join product_cart b on (a.id = b.id_cart) "
                "inner join product_price c on (b.id_product_price = c.id) "
@@ -343,6 +343,7 @@ async def getCartById(cart_id: int, db: db_dependency):
             newProductPrice = ProductPriceDto()
             newProductPrice.product = newPproduct
             newProductPrice.price = p[2]
+            newProductPrice.quantity = p[7]
             listProductPrice.append(newProductPrice)
             newCart.list_product_price = listProductPrice
     except:
